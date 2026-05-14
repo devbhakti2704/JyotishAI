@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Groq from 'groq-sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
 function calculateRashi(dob: string): string {
@@ -57,27 +57,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
       return NextResponse.json(
-        { error: 'Anthropic API key not configured. Please add ANTHROPIC_API_KEY to your .env.local file.' },
+        { error: 'Groq API key not configured. Please add GROQ_API_KEY to your .env.local file.' },
         { status: 500 }
       )
     }
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
     const rashi = calculateRashi(dob)
     const birthTime = tob ? `at ${tob}` : '(time not provided)'
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2500,
-      system:
-        'You are a master Vedic astrologer with 30 years of experience in Jyotish shastra. You give detailed, specific, emotionally resonant readings that feel personal and accurate. Never be vague. Always give specific predictions and advice tailored to the individual. Speak with authority and warmth. You deeply understand planetary periods (dashas), doshas, and remedies. Always respond in valid JSON format only — no markdown, no explanation outside the JSON.',
-      messages: [
-        {
-          role: 'user',
-          content: `Give a complete Vedic astrology reading for ${name}, born on ${dob} ${birthTime} in ${pob}. Their approximate Rashi (Sun sign) is ${rashi}.
+    const prompt = `Give a complete Vedic astrology reading for ${name}, born on ${dob} ${birthTime} in ${pob}. Their approximate Rashi (Sun sign) is ${rashi}.
 
 Return ONLY valid JSON in this exact structure (no extra text, no markdown):
 {
@@ -110,32 +102,31 @@ Return ONLY valid JSON in this exact structure (no extra text, no markdown):
       "description": "Detailed explanation of their Mangal Dosha status, its implications, and remedies if present"
     }
   }
-}`,
-        },
+}`
+
+    const systemPrompt =
+      'You are a master Vedic astrologer with 30 years of experience in Jyotish shastra. You give detailed, specific, emotionally resonant readings that feel personal and accurate. Never be vague. Always give specific predictions and advice tailored to the individual. Speak with authority and warmth. You deeply understand planetary periods (dashas), doshas, and remedies. Always respond in valid JSON format only — no markdown, no explanation outside the JSON.'
+
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt },
       ],
+      max_tokens: 2000,
     })
 
-    const content = response.content[0]
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type from Claude API')
-    }
-
-    // Clean the response — remove any markdown code blocks if present
-    let rawText = content.text.trim()
-    if (rawText.startsWith('```')) {
-      rawText = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
-    }
+    const rawText = (completion.choices[0].message.content ?? '').trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
 
     let reading
     try {
       reading = JSON.parse(rawText)
     } catch {
-      // Attempt to extract JSON from the text
       const jsonMatch = rawText.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         reading = JSON.parse(jsonMatch[0])
       } else {
-        throw new Error('Failed to parse JSON from Claude response')
+        throw new Error('Failed to parse JSON from Gemini response')
       }
     }
 
@@ -144,10 +135,16 @@ Return ONLY valid JSON in this exact structure (no extra text, no markdown):
     console.error('Reading API error:', error)
 
     if (error instanceof Error) {
-      if (error.message.includes('API key')) {
+      if (error.message.includes('401') || error.message.includes('api_key') || error.message.includes('API key')) {
         return NextResponse.json(
-          { error: 'Invalid API key. Please check your ANTHROPIC_API_KEY.' },
+          { error: 'Invalid API key. Please check your GROQ_API_KEY.' },
           { status: 401 }
+        )
+      }
+      if (error.message.includes('429') || error.message.includes('rate_limit') || error.message.includes('quota')) {
+        return NextResponse.json(
+          { error: 'Groq API rate limit exceeded. Please try again later.' },
+          { status: 429 }
         )
       }
       if (error.message.includes('parse')) {

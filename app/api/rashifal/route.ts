@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Groq from 'groq-sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -13,14 +13,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
       return NextResponse.json(
-        { error: 'Anthropic API key not configured. Please add ANTHROPIC_API_KEY to your .env.local file.' },
+        { error: 'Groq API key not configured. Please add GROQ_API_KEY to your .env.local file.' },
         { status: 500 }
       )
     }
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
     const formattedDate = new Date(date).toLocaleDateString('en-IN', {
       weekday: 'long',
@@ -29,15 +29,7 @@ export async function POST(request: NextRequest) {
       day: 'numeric',
     })
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      system:
-        'You are a master Vedic astrologer with 30 years of experience. You give specific, emotionally resonant daily horoscopes that feel personal and accurate. Speak with warmth and authority. Be specific about energies, not generic. Always respond in valid JSON format only — no markdown, no text outside the JSON.',
-      messages: [
-        {
-          role: 'user',
-          content: `Give today's Vedic horoscope for ${rashi} rashi for ${formattedDate}.
+    const prompt = `Give today's Vedic horoscope for ${rashi} rashi for ${formattedDate}.
 
 Make it specific, emotionally resonant, 3-4 paragraphs covering love, career, and general energy guidance for the day. Include practical daily advice. Make it feel like it was written specifically for this date and this rashi.
 
@@ -47,20 +39,21 @@ Return ONLY valid JSON:
   "luckyNumber": 7,
   "luckyColor": "Royal Blue",
   "advice": "One specific, actionable lucky tip for today — practical and cosmic simultaneously."
-}`,
-        },
+}`
+
+    const systemPrompt =
+      'You are a master Vedic astrologer with 30 years of experience. You give specific, emotionally resonant daily horoscopes that feel personal and accurate. Speak with warmth and authority. Be specific about energies, not generic. Always respond in valid JSON format only — no markdown, no text outside the JSON.'
+
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt },
       ],
+      max_tokens: 2000,
     })
 
-    const content = response.content[0]
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type from Claude API')
-    }
-
-    let rawText = content.text.trim()
-    if (rawText.startsWith('```')) {
-      rawText = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
-    }
+    const rawText = (completion.choices[0].message.content ?? '').trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
 
     let horoscope
     try {
@@ -70,7 +63,7 @@ Return ONLY valid JSON:
       if (jsonMatch) {
         horoscope = JSON.parse(jsonMatch[0])
       } else {
-        throw new Error('Failed to parse JSON from Claude response')
+        throw new Error('Failed to parse JSON from Gemini response')
       }
     }
 
@@ -79,10 +72,16 @@ Return ONLY valid JSON:
     console.error('Rashifal API error:', error)
 
     if (error instanceof Error) {
-      if (error.message.includes('API key')) {
+      if (error.message.includes('401') || error.message.includes('api_key') || error.message.includes('API key')) {
         return NextResponse.json(
-          { error: 'Invalid API key. Please check your ANTHROPIC_API_KEY.' },
+          { error: 'Invalid API key. Please check your GROQ_API_KEY.' },
           { status: 401 }
+        )
+      }
+      if (error.message.includes('429') || error.message.includes('rate_limit') || error.message.includes('quota')) {
+        return NextResponse.json(
+          { error: 'Groq API rate limit exceeded. Please try again later.' },
+          { status: 429 }
         )
       }
       return NextResponse.json({ error: error.message }, { status: 500 })
