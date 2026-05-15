@@ -33,14 +33,6 @@ function formatTime(seconds: number) {
   return `${m}:${s}`
 }
 
-// Teaser lines — first words are visible, rest fades to blur
-const TEASERS = [
-  { icon: '💼', label: 'Career', visible: 'Your career is about to face a significant', rest: '… shift that will define the next 3 years of your professional life.' },
-  { icon: '💕', label: 'Love',   visible: 'In matters of love, there is someone who',  rest: '… has been thinking of you — and the stars say your paths will cross.' },
-  { icon: '💰', label: 'Finance', visible: 'A major financial shift is coming in',      rest: '… the next 60 days — one decision will determine your wealth trajectory.' },
-  { icon: '🌿', label: 'Health', visible: 'Your body is sending you signals about',     rest: '… a hidden imbalance that, if addressed now, will change everything.' },
-]
-
 // ── Countdown hook ─────────────────────────────────────────────────────────────
 function useCountdown() {
   const [seconds, setSeconds] = useState(() => randomBetween(8 * 60, 12 * 60))
@@ -153,47 +145,9 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
   return (
     <div className="relative">
 
-      {/* ── Blurred teaser content ── */}
-      <div style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        {/* Show real children at full blur */}
-        <div style={{ filter: 'blur(4px)', opacity: 0.5 }}>{children}</div>
-
-        {/* Teaser lines overlaid on top — partially readable */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            padding: '2rem 1.5rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-          }}
-        >
-          {TEASERS.map((t) => (
-            <div
-              key={t.label}
-              className="glass-card p-4"
-              style={{ border: '1px solid rgba(201,168,76,0.2)', borderRadius: '10px' }}
-            >
-              <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '1rem', lineHeight: 1.6 }}>
-                <span style={{ color: '#E2C07A' }}>{t.icon} {t.label}: </span>
-                {/* Visible portion */}
-                <span style={{ color: '#F5EFD6' }}>{t.visible}</span>
-                {/* Fades into blur via mask */}
-                <span
-                  style={{
-                    color: '#D4C9A8',
-                    WebkitMaskImage: 'linear-gradient(to right, black 0%, transparent 60%)',
-                    maskImage: 'linear-gradient(to right, black 0%, transparent 60%)',
-                    filter: 'blur(3px)',
-                  }}
-                >
-                  {t.rest}
-                </span>
-              </p>
-            </div>
-          ))}
-        </div>
+      {/* ── Blurred background content ── */}
+      <div style={{ filter: 'blur(4px)', opacity: 0.5, pointerEvents: 'none', userSelect: 'none' }}>
+        {children}
       </div>
 
       {/* ── Lock overlay ── */}
@@ -311,6 +265,56 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
                     </li>
                   ))}
                 </ul>
+
+                {/* ── Teaser previews ── */}
+                <div style={{ marginBottom: '16px', textAlign: 'left' }}>
+                  {[
+                    { icon: '💼', label: 'Career',  text: 'Your career is about to face a significant...' },
+                    { icon: '❤️', label: 'Love',    text: 'In matters of love, there is someone who...' },
+                    { icon: '💰', label: 'Finance', text: 'A major financial shift is coming in...' },
+                    { icon: '🌿', label: 'Health',  text: 'Your body is sending you signals about...' },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        marginBottom: '10px',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        borderRadius: '6px',
+                        padding: '6px 8px',
+                        background: 'rgba(201,168,76,0.05)',
+                        border: '1px solid rgba(201,168,76,0.12)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: 'EB Garamond, serif',
+                          fontSize: '0.95rem',
+                          color: '#F5EFD6',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <span style={{ color: '#C9A84C', fontWeight: 600 }}>
+                          {item.icon} {item.label}:{' '}
+                        </span>
+                        {item.text}
+                      </span>
+                      {/* Gradient curtain — fades text into background colour */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: 0,
+                          width: '55%',
+                          height: '100%',
+                          background: 'linear-gradient(to right, transparent, #0A0A0F)',
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
 
                 {/* ── Urgency line ── */}
                 <p className="text-xs mb-3"
