@@ -9,9 +9,9 @@ import MandalaDivider from '@/components/MandalaDivider'
 
 interface RashiHoroscope {
   horoscope: string
-  luckyNumber: number
-  luckyColor: string
-  advice: string
+  luckyNumber?: number
+  luckyColor?: string
+  advice?: string
 }
 
 interface Rashi {
@@ -83,6 +83,7 @@ export default function RashifalPage() {
         body: JSON.stringify({ rashi: rashi.english, date: apiDate }),
       })
 
+
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
         throw new Error(data.error || 'Failed to fetch horoscope')
@@ -94,7 +95,7 @@ export default function RashifalPage() {
       setError(
         err instanceof Error
           ? err.message
-          : 'The cosmos is temporarily unavailable. Please try again.'
+          : 'The stars are temporarily misaligned. Please try again.'
       )
     } finally {
       setIsLoading(false)
@@ -411,49 +412,55 @@ export default function RashifalPage() {
                       </div>
                     )}
 
-                    {/* Lucky number & color */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div
-                        className="p-4 rounded-lg text-center"
-                        style={{
-                          background: 'rgba(201,168,76,0.08)',
-                          border: '1px solid rgba(201,168,76,0.2)',
-                        }}
-                      >
-                        <p
-                          className="text-xs mb-1"
-                          style={{ fontFamily: 'Cinzel, serif', color: 'rgba(201,168,76,0.6)' }}
-                        >
-                          Lucky Number
-                        </p>
-                        <p
-                          className="text-3xl font-bold"
-                          style={{ fontFamily: 'Cinzel, serif', color: '#C9A84C' }}
-                        >
-                          {horoscope.luckyNumber}
-                        </p>
+                    {/* Lucky number & color — only shown if API returns them */}
+                    {(horoscope.luckyNumber || horoscope.luckyColor) && (
+                      <div className="grid grid-cols-2 gap-3">
+                        {horoscope.luckyNumber && (
+                          <div
+                            className="p-4 rounded-lg text-center"
+                            style={{
+                              background: 'rgba(201,168,76,0.08)',
+                              border: '1px solid rgba(201,168,76,0.2)',
+                            }}
+                          >
+                            <p
+                              className="text-xs mb-1"
+                              style={{ fontFamily: 'Cinzel, serif', color: 'rgba(201,168,76,0.6)' }}
+                            >
+                              Lucky Number
+                            </p>
+                            <p
+                              className="text-3xl font-bold"
+                              style={{ fontFamily: 'Cinzel, serif', color: '#C9A84C' }}
+                            >
+                              {horoscope.luckyNumber}
+                            </p>
+                          </div>
+                        )}
+                        {horoscope.luckyColor && (
+                          <div
+                            className="p-4 rounded-lg text-center"
+                            style={{
+                              background: 'rgba(201,168,76,0.08)',
+                              border: '1px solid rgba(201,168,76,0.2)',
+                            }}
+                          >
+                            <p
+                              className="text-xs mb-1"
+                              style={{ fontFamily: 'Cinzel, serif', color: 'rgba(201,168,76,0.6)' }}
+                            >
+                              Lucky Color
+                            </p>
+                            <p
+                              className="text-lg font-bold"
+                              style={{ fontFamily: 'Cinzel, serif', color: '#E2C07A' }}
+                            >
+                              {horoscope.luckyColor}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      <div
-                        className="p-4 rounded-lg text-center"
-                        style={{
-                          background: 'rgba(201,168,76,0.08)',
-                          border: '1px solid rgba(201,168,76,0.2)',
-                        }}
-                      >
-                        <p
-                          className="text-xs mb-1"
-                          style={{ fontFamily: 'Cinzel, serif', color: 'rgba(201,168,76,0.6)' }}
-                        >
-                          Lucky Color
-                        </p>
-                        <p
-                          className="text-lg font-bold"
-                          style={{ fontFamily: 'Cinzel, serif', color: '#E2C07A' }}
-                        >
-                          {horoscope.luckyColor}
-                        </p>
-                      </div>
-                    </div>
+                    )}
 
                     {/* CTA */}
                     <div className="pt-2">
