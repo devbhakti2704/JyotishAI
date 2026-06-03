@@ -320,7 +320,7 @@ export default function ReadingPage() {
                 <label htmlFor="tob" style={labelStyle}>
                   Time of Birth{' '}
                   <span style={{ color: 'rgba(201,168,76,0.5)', fontSize: '0.75rem' }}>
-                    (optional, improves accuracy)
+                    (optional)
                   </span>
                 </label>
                 <input
@@ -332,6 +332,15 @@ export default function ReadingPage() {
                   className="form-input"
                   disabled={isLoading}
                 />
+                <p style={{
+                  marginTop: '6px',
+                  fontFamily: 'EB Garamond, serif',
+                  fontSize: '0.85rem',
+                  color: 'rgba(245,239,214,0.4)',
+                  fontStyle: 'italic',
+                }}>
+                  Don&apos;t know your birth time? That&apos;s okay — we&apos;ll still generate your reading.
+                </p>
               </div>
 
               {/* Place of Birth */}
@@ -470,7 +479,7 @@ export default function ReadingPage() {
                       <circle cx="12" cy="12" r="10" stroke="rgba(10,10,15,0.3)" strokeWidth="3" />
                       <path d="M12 2a10 10 0 0110 10" stroke="#0A0A0F" strokeWidth="3" strokeLinecap="round" />
                     </svg>
-                    The stars are aligning...
+                    Reading your chart…
                   </span>
                 ) : (
                   'Reveal My Destiny ✦'

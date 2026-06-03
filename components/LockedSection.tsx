@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useState, useEffect, useRef } from 'react'
+import { ReactNode, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface LockedSectionProps {
@@ -23,59 +23,24 @@ function loadRazorpayScript(): Promise<boolean> {
   })
 }
 
-function randomBetween(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-function formatTime(seconds: number) {
-  const m = Math.floor(seconds / 60).toString().padStart(2, '0')
-  const s = (seconds % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
-
-function useCountdown() {
-  const [seconds, setSeconds] = useState(() => randomBetween(8 * 60, 12 * 60))
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSeconds((prev) => (prev <= 1 ? randomBetween(8 * 60, 12 * 60) : prev - 1))
-    }, 1000)
-    return () => clearInterval(id)
-  }, [])
-  return seconds
-}
-
-function useSocialCount() {
-  const [count, setCount] = useState(() => randomBetween(2400, 2600))
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => {
-    const schedule = () => {
-      timeoutRef.current = setTimeout(() => { setCount((c) => c + 1); schedule() }, randomBetween(45_000, 90_000))
-    }
-    schedule()
-    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) }
-  }, [])
-  return count.toLocaleString('en-IN')
-}
-
-const TEASERS = [
-  { icon: '💼', label: 'Career',  text: 'Your career is about to face a significant turning point that will redefine your path entirely...' },
-  { icon: '❤️', label: 'Love',    text: 'In matters of love, there is someone who has been thinking of you and the stars say...' },
-  { icon: '💰', label: 'Finance', text: 'A major financial shift is coming in the next 60 days — one decision will determine...' },
-  { icon: '🌿', label: 'Health',  text: 'Your body is sending you signals about a hidden imbalance that if addressed now will...' },
+const WHATS_INCLUDED = [
+  { icon: '💼', text: 'Detailed career path & timing for the next 12 months' },
+  { icon: '💕', text: 'Love & marriage predictions' },
+  { icon: '🌿', text: 'Health outlook & wellness guidance' },
+  { icon: '💰', text: 'Financial forecast & wealth timing' },
+  { icon: '⏳', text: 'Your Dasha periods for the next 5 years' },
+  { icon: '💎', text: 'Personalised remedies: gemstone, mantra & fasting day' },
+  { icon: '🔴', text: 'Mangal Dosha analysis' },
 ]
 
 export default function LockedSection({ isUnlocked, onUnlock, children }: LockedSectionProps) {
   const [paymentState, setPaymentState] = useState<PaymentState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-  const countdown = useCountdown()
-  const socialCount = useSocialCount()
 
   const isProcessing =
     paymentState === 'creating-order' ||
     paymentState === 'awaiting-payment' ||
     paymentState === 'verifying'
-
-  const timerIsUrgent = countdown < 120
 
   const handleUnlockClick = async () => {
     setPaymentState('creating-order')
@@ -117,7 +82,7 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
                 setTimeout(() => onUnlock(), 1800)
                 resolve()
               } else {
-                throw new Error('Payment verification failed.')
+                throw new Error('Payment verification failed. Please contact support.')
               }
             } catch (err) { reject(err) }
           },
@@ -135,8 +100,8 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
 
   return (
     <div className="relative">
-      {/* Blurred background */}
-      <div style={{ filter: 'blur(4px)', opacity: 0.4, pointerEvents: 'none', userSelect: 'none' }}>
+      {/* Blurred background preview */}
+      <div style={{ filter: 'blur(5px)', opacity: 0.35, pointerEvents: 'none', userSelect: 'none' }}>
         {children}
       </div>
 
@@ -146,10 +111,10 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
           className="mx-4 max-w-lg w-full"
           style={{
             background: 'rgba(15, 15, 26, 0.97)',
-            border: '1px solid rgba(201, 168, 76, 0.3)',
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: '0 0 60px rgba(201,168,76,0.12), 0 20px 60px rgba(0,0,0,0.7)',
+            border: '1px solid rgba(201, 168, 76, 0.35)',
+            borderRadius: '14px',
+            padding: '28px 24px',
+            boxShadow: '0 0 60px rgba(201,168,76,0.1), 0 24px 64px rgba(0,0,0,0.7)',
           }}
         >
           <AnimatePresence mode="wait">
@@ -159,21 +124,21 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
                 key="success"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center py-6"
+                className="text-center py-4"
               >
                 <div className="flex justify-center mb-4">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.4)' }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    style={{ background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.4)' }}>
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
                       <path d="M5 12l5 5L19 7" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </div>
-                <h3 style={{ fontFamily: 'Cinzel, serif', fontSize: '22px', color: '#E2C07A', marginBottom: '8px' }}>
+                <h3 style={{ fontFamily: 'Cinzel, serif', fontSize: '22px', color: '#E2C07A', marginBottom: '8px', fontWeight: 700 }}>
                   ✨ Reading Unlocked!
                 </h3>
                 <p style={{ fontFamily: 'EB Garamond, serif', color: 'rgba(245,239,214,0.7)', fontSize: '16px' }}>
-                  The stars have spoken. Revealing your complete cosmic blueprint…
+                  Revealing your complete cosmic blueprint…
                 </p>
               </motion.div>
 
@@ -187,120 +152,78 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
                   fontSize: '20px',
                   color: '#C9A84C',
                   textAlign: 'center',
-                  marginBottom: '20px',
+                  marginBottom: '6px',
                   fontWeight: 700,
                 }}>
                   🔮 Your Full Reading Awaits
                 </h3>
-
-                {/* ── Teaser rows ── */}
-                <div style={{ marginBottom: '24px' }}>
-                  {TEASERS.map((item, i) => (
-                    <div
-                      key={item.label}
-                      style={{
-                        background: 'transparent',
-                        padding: '12px 0',
-                        borderBottom: i < TEASERS.length - 1
-                          ? '1px solid rgba(201, 168, 76, 0.2)'
-                          : 'none',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {/* Label */}
-                      <div style={{
-                        fontFamily: 'Cinzel, serif',
-                        fontSize: '11px',
-                        color: '#C9A84C',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        marginBottom: '4px',
-                        textTransform: 'uppercase',
-                      }}>
-                        {item.icon} {item.label}
-                      </div>
-                      {/* Text with mask — left 40% fully visible, fades right */}
-                      <div
-                        style={{
-                          fontFamily: 'EB Garamond, serif',
-                          fontSize: '15px',
-                          color: '#F5EFD6',
-                          lineHeight: 1.5,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          WebkitMaskImage: 'linear-gradient(to right, black 40%, transparent 100%)',
-                          maskImage: 'linear-gradient(to right, black 40%, transparent 100%)',
-                        }}
-                      >
-                        {item.text}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ── Social proof ── */}
-                <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                  <motion.span
-                    key={socialCount}
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    style={{
-                      fontFamily: 'Cinzel, serif',
-                      fontSize: '12px',
-                      color: '#C9A84C',
-                      fontWeight: 600,
-                    }}
-                  >
-                    ✨ {socialCount} readings unlocked today
-                  </motion.span>
-                </div>
-
-                {/* ── Countdown ── */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
-                  <span style={{ fontFamily: 'EB Garamond, serif', fontSize: '14px', color: 'rgba(245,239,214,0.6)' }}>
-                    ⏰ Offer expires in
-                  </span>
-                  <span style={{
-                    fontFamily: 'Cinzel, serif',
-                    fontSize: '15px',
-                    fontWeight: 700,
-                    color: timerIsUrgent ? '#f87171' : '#E2C07A',
-                    transition: 'color 0.5s',
-                  }}>
-                    {formatTime(countdown)}
-                  </span>
-                </div>
-
-                {/* ── Urgency line ── */}
                 <p style={{
                   fontFamily: 'EB Garamond, serif',
-                  fontSize: '13px',
-                  color: '#f87171',
-                  fontStyle: 'italic',
+                  fontSize: '15px',
+                  color: 'rgba(245,239,214,0.55)',
                   textAlign: 'center',
-                  marginBottom: '16px',
+                  marginBottom: '20px',
                 }}>
-                  ⚠️ Your Saturn return window is active — critical predictions locked
+                  Your free chart is ready. Unlock the full interpretation below.
                 </p>
 
-                {/* ── Price block ── */}
-                <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '2px 12px',
-                    borderRadius: '999px',
-                    background: 'rgba(239,68,68,0.15)',
-                    border: '1px solid rgba(239,68,68,0.4)',
-                    color: '#f87171',
-                    fontFamily: 'Cinzel, serif',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    letterSpacing: '0.04em',
-                    marginBottom: '8px',
+                {/* Value anchor */}
+                <div style={{
+                  background: 'rgba(201,168,76,0.06)',
+                  border: '1px solid rgba(201,168,76,0.18)',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  marginBottom: '20px',
+                  textAlign: 'center',
+                }}>
+                  <p style={{
+                    fontFamily: 'EB Garamond, serif',
+                    fontSize: '15px',
+                    color: '#D4C9A8',
+                    lineHeight: 1.5,
                   }}>
-                    🔥 Limited Time Offer
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '10px' }}>
+                    A human astrologer charges{' '}
+                    <span style={{ color: '#E2C07A', fontWeight: 600 }}>₹500–₹2,000</span>
+                    {' '}for a detailed reading.
+                    <br />Your complete AI reading:{' '}
+                    <span style={{ color: '#C9A84C', fontWeight: 700, fontFamily: 'Cinzel, serif' }}>just ₹49.</span>
+                  </p>
+                </div>
+
+                {/* What's included */}
+                <p style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  color: 'rgba(201,168,76,0.6)',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  marginBottom: '10px',
+                }}>
+                  Your full reading includes:
+                </p>
+                <ul style={{ marginBottom: '20px', paddingLeft: 0, listStyle: 'none' }}>
+                  {WHATS_INCLUDED.map((item) => (
+                    <li key={item.text} style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      padding: '7px 0',
+                      borderBottom: '1px solid rgba(201,168,76,0.1)',
+                      fontFamily: 'EB Garamond, serif',
+                      fontSize: '15px',
+                      color: '#D4C9A8',
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: '3px' }}>
+                        <path d="M5 12l5 5L19 7" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span>{item.icon} {item.text}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Price */}
+                <div style={{ textAlign: 'center', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '10px', marginBottom: '4px' }}>
                     <span style={{
                       fontFamily: 'EB Garamond, serif',
                       fontSize: '16px',
@@ -309,28 +232,37 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
                     }}>₹149</span>
                     <span style={{
                       fontFamily: 'Cinzel, serif',
-                      fontSize: '28px',
+                      fontSize: '30px',
                       fontWeight: 700,
                       color: '#C9A84C',
                       lineHeight: 1,
                     }}>₹49</span>
                   </div>
+                  <p style={{
+                    fontFamily: 'EB Garamond, serif',
+                    fontSize: '12px',
+                    color: 'rgba(201,168,76,0.5)',
+                    letterSpacing: '0.04em',
+                  }}>
+                    Launch price — will increase soon
+                  </p>
                 </div>
 
-                {/* ── Error ── */}
+                {/* Error message */}
                 <AnimatePresence>
                   {paymentState === 'error' && errorMsg && (
                     <motion.div
                       initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                       style={{
-                        background: 'rgba(180,50,50,0.15)',
-                        border: '1px solid rgba(180,50,50,0.4)',
+                        background: 'rgba(180,50,50,0.12)',
+                        border: '1px solid rgba(180,50,50,0.35)',
                         borderRadius: '8px',
                         padding: '10px 14px',
-                        marginBottom: '12px',
+                        margin: '12px 0',
                         color: '#f87171',
                         fontFamily: 'EB Garamond, serif',
                         fontSize: '14px',
+                        textAlign: 'center',
                       }}
                     >
                       {errorMsg}
@@ -338,22 +270,23 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
                   )}
                 </AnimatePresence>
 
-                {/* ── Unlock button ── */}
+                {/* Unlock button */}
                 <button
                   onClick={handleUnlockClick}
                   disabled={isProcessing}
-                  className="glow-btn w-full rounded-lg transition-all duration-300"
+                  className="glow-btn w-full rounded-xl transition-all duration-300"
                   style={{
                     fontFamily: 'Cinzel, serif',
                     fontSize: '16px',
-                    padding: '14px 24px',
+                    padding: '15px 24px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
+                    marginTop: '16px',
+                    marginBottom: '14px',
                     opacity: isProcessing ? 0.8 : 1,
                     cursor: isProcessing ? 'not-allowed' : 'pointer',
-                    marginBottom: '16px',
                   }}
                 >
                   {isProcessing ? (
@@ -367,27 +300,36 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
                       {paymentState === 'verifying'        && 'Verifying Payment…'}
                     </>
                   ) : (
-                    '🔮 Unlock Full Reading'
+                    '🔮 Unlock Full Reading — ₹49'
                   )}
                 </button>
 
-                {/* ── Trust badges ── */}
+                {/* Trust row */}
                 <div style={{
                   display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '16px',
-                  flexWrap: 'wrap',
                 }}>
-                  {['🔒 Secure Payment', '⚡ Instant Unlock', '↩️ Money Back Guarantee'].map((badge) => (
-                    <span key={badge} style={{
-                      fontFamily: 'EB Garamond, serif',
-                      fontSize: '12px',
-                      color: 'rgba(201,168,76,0.6)',
-                    }}>
-                      {badge}
+                  {/* Razorpay trust */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <rect x="5" y="11" width="14" height="10" rx="2" stroke="rgba(201,168,76,0.5)" strokeWidth="1.5" />
+                      <path d="M8 11V7a4 4 0 118 0v4" stroke="rgba(201,168,76,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <span style={{ fontFamily: 'EB Garamond, serif', fontSize: '13px', color: 'rgba(201,168,76,0.55)' }}>
+                      Secure payment via Razorpay
                     </span>
-                  ))}
+                  </div>
+                  {/* Refund guarantee */}
+                  <p style={{
+                    fontFamily: 'EB Garamond, serif',
+                    fontSize: '13px',
+                    color: 'rgba(245,239,214,0.45)',
+                    textAlign: 'center',
+                  }}>
+                    Not satisfied? Full refund, no questions asked.
+                  </p>
                 </div>
 
               </motion.div>

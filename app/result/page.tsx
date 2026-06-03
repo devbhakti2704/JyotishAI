@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -113,7 +113,7 @@ function SpinningMandala() {
         className="text-lg italic"
         style={{ fontFamily: 'EB Garamond, serif', color: '#E2C07A' }}
       >
-        The stars are aligning for you...
+        Reading your chart…
       </p>
       <p
         className="text-sm"
@@ -156,6 +156,9 @@ function ResultContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isUnlocked, setIsUnlocked] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [email, setEmail] = useState('')
+  const [subscribeState, setSubscribeState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
 
   useEffect(() => {
     if (!id) {
@@ -206,6 +209,42 @@ function ResultContent() {
     Aquarius: '♒',
     Pisces: '♓',
   }
+
+  const handleShare = useCallback(async (rashi: string) => {
+    const text = `I just got my free Vedic Kundali reading on JyotishAI! My Rashi is ${rashi}. Check yours free at jyotishai.xyz`
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      // Fallback for browsers that block clipboard without user gesture
+      const ta = document.createElement('textarea')
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    }
+  }, [])
+
+  const handleSubscribe = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !email.includes('@')) return
+    setSubscribeState('loading')
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (!res.ok) throw new Error()
+      setSubscribeState('done')
+    } catch {
+      setSubscribeState('error')
+    }
+  }, [email])
 
   const getRashiSymbol = (rashi: string) => {
     for (const [key, val] of Object.entries(rashiSymbols)) {
@@ -428,6 +467,107 @@ function ResultContent() {
                   {reading.luckyColor}
                 </div>
               </div>
+            </div>
+          </motion.div>
+
+          {/* Share button */}
+          <motion.div variants={fadeInUp} className="mt-4 mb-2 flex justify-center">
+            <button
+              onClick={() => handleShare(reading.rashi)}
+              style={{
+                fontFamily: 'Cinzel, serif',
+                fontSize: '13px',
+                color: copied ? '#4ade80' : '#C9A84C',
+                background: copied ? 'rgba(74,222,128,0.08)' : 'rgba(201,168,76,0.08)',
+                border: `1px solid ${copied ? 'rgba(74,222,128,0.3)' : 'rgba(201,168,76,0.25)'}`,
+                borderRadius: '999px',
+                padding: '8px 20px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                transition: 'all 0.3s',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {copied ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12l5 5L19 7" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Share My Rashi
+                </>
+              )}
+            </button>
+          </motion.div>
+
+          {/* Email capture — optional */}
+          <motion.div variants={fadeInUp} className="mt-6 mb-2">
+            <div className="glass-card p-5" style={{ border: '1px solid rgba(201,168,76,0.2)' }}>
+              {subscribeState === 'done' ? (
+                <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '15px', color: '#4ade80', textAlign: 'center' }}>
+                  ✓ You&apos;re subscribed! Your daily Rashifal is on its way.
+                </p>
+              ) : (
+                <>
+                  <p style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', color: '#C9A84C', marginBottom: '4px', letterSpacing: '0.04em' }}>
+                    Want your free daily Rashifal?
+                  </p>
+                  <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '14px', color: 'rgba(245,239,214,0.5)', marginBottom: '12px' }}>
+                    Enter your email — completely optional, unsubscribe any time.
+                  </p>
+                  <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      style={{
+                        flex: 1,
+                        minWidth: '180px',
+                        background: 'rgba(10,10,15,0.8)',
+                        border: '1px solid rgba(201,168,76,0.35)',
+                        borderRadius: '8px',
+                        padding: '10px 14px',
+                        color: '#F5EFD6',
+                        fontFamily: 'EB Garamond, serif',
+                        fontSize: '15px',
+                        outline: 'none',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={subscribeState === 'loading'}
+                      style={{
+                        fontFamily: 'Cinzel, serif',
+                        fontSize: '13px',
+                        background: 'rgba(201,168,76,0.15)',
+                        border: '1px solid rgba(201,168,76,0.4)',
+                        borderRadius: '8px',
+                        padding: '10px 18px',
+                        color: '#C9A84C',
+                        cursor: subscribeState === 'loading' ? 'not-allowed' : 'pointer',
+                        whiteSpace: 'nowrap',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {subscribeState === 'loading' ? 'Saving…' : 'Subscribe'}
+                    </button>
+                  </form>
+                  {subscribeState === 'error' && (
+                    <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '13px', color: '#f87171', marginTop: '6px' }}>
+                      Something went wrong. Please try again.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           </motion.div>
 
