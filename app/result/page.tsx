@@ -8,6 +8,7 @@ import StarBackground from '@/components/StarBackground'
 import MandalaDivider from '@/components/MandalaDivider'
 import KundaliChart from '@/components/KundaliChart'
 import LockedSection from '@/components/LockedSection'
+import ShareCard from '@/components/ShareCard'
 import { trackEvent } from '@/lib/analytics'
 
 interface DashaPeriod {
@@ -52,13 +53,13 @@ interface ReadingData {
 }
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.32, ease: 'easeOut' } },
 }
 
 const stagger = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.12 } },
+  visible: { transition: { staggerChildren: 0.08 } },
 }
 
 function SpinningMandala() {
@@ -157,6 +158,7 @@ function ResultContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isUnlocked, setIsUnlocked] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [email, setEmail] = useState('')
   const [subscribeState, setSubscribeState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
@@ -295,6 +297,13 @@ function ResultContent() {
   const name = reading.formData?.name || 'Seeker'
   const rashiSymbol = getRashiSymbol(reading.rashi)
 
+  // One poetic line for the shareable card — first sentence of the overview.
+  const tagline = (() => {
+    const overview = reading.freeReading?.personalityOverview || ''
+    const first = overview.split(/(?<=[.!?])\s/)[0]?.trim() || 'Written in the stars, guided by ancient light.'
+    return first.length > 120 ? first.slice(0, 117).trimEnd() + '…' : first
+  })()
+
   return (
     <div className="relative z-10 min-h-screen px-4 pt-20 pb-16">
       <div className="max-w-3xl mx-auto">
@@ -354,11 +363,16 @@ function ResultContent() {
             </div>
           </motion.div>
 
-          {/* Kundali Chart */}
+          {/* Kundali Chart — draws itself in once on load */}
           <motion.div variants={fadeInUp} className="flex justify-center mb-8">
-            <div className="glass-card p-6">
+            <motion.div
+              className="glass-card p-6"
+              initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ duration: 0.7, ease: 'easeOut', delay: 0.25 }}
+            >
               <KundaliChart name={name} rashi={reading.rashi} lagna={reading.lagna} />
-            </div>
+            </motion.div>
           </motion.div>
 
           <MandalaDivider />
@@ -470,6 +484,27 @@ function ResultContent() {
                 </div>
               </div>
             </div>
+
+            {/* Share — secondary action, outline so the unlock CTA stays primary */}
+            <motion.button
+              onClick={() => setShareOpen(true)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3 rounded-xl text-sm flex items-center justify-center gap-2 transition-all duration-300"
+              style={{
+                fontFamily: 'Cinzel, serif',
+                border: '1px solid rgba(201,168,76,0.4)',
+                color: '#C9A84C',
+                background: 'rgba(201,168,76,0.05)',
+                letterSpacing: '0.05em',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Share My Rashi
+            </motion.button>
           </motion.div>
 
           {/* Share button */}
@@ -793,6 +828,15 @@ function ResultContent() {
           </motion.div>
         </motion.div>
       </div>
+
+      <ShareCard
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        name={name}
+        rashi={reading.rashi}
+        rashiSymbol={rashiSymbol}
+        tagline={tagline}
+      />
     </div>
   )
 }
