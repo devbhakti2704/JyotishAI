@@ -8,6 +8,7 @@ import StarBackground from '@/components/StarBackground'
 import MandalaDivider from '@/components/MandalaDivider'
 import KundaliChart from '@/components/KundaliChart'
 import LockedSection from '@/components/LockedSection'
+import { trackEvent } from '@/lib/analytics'
 
 interface DashaPeriod {
   period: string
@@ -176,6 +177,7 @@ function ResultContent() {
       }
       const data = JSON.parse(stored) as ReadingData
       setReading(data)
+      trackEvent('reading_completed')
     } catch {
       setError('Failed to load your reading. Please try again.')
     } finally {

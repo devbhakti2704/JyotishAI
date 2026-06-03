@@ -2,6 +2,7 @@
 
 import { ReactNode, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { trackEvent } from '@/lib/analytics'
 
 interface LockedSectionProps {
   isUnlocked: boolean
@@ -43,6 +44,7 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
     paymentState === 'verifying'
 
   const handleUnlockClick = async () => {
+    trackEvent('unlock_clicked')
     setPaymentState('creating-order')
     setErrorMsg('')
     try {
@@ -78,6 +80,7 @@ export default function LockedSection({ isUnlocked, onUnlock, children }: Locked
               })
               const verifyData = await verifyRes.json()
               if (verifyData.success) {
+                trackEvent('purchase', { value: 49, currency: 'INR' })
                 setPaymentState('success')
                 setTimeout(() => onUnlock(), 1800)
                 resolve()

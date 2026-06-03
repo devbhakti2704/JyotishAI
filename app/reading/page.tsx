@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid'
 import StarBackground from '@/components/StarBackground'
 import MandalaDivider from '@/components/MandalaDivider'
+import { trackEvent } from '@/lib/analytics'
 
 // ── Location data ──────────────────────────────────────────────────────────────
 
@@ -168,6 +169,7 @@ export default function ReadingPage() {
 
     setIsLoading(true)
     setError('')
+    trackEvent('reading_requested')
 
     try {
       const response = await fetch('/api/reading', {

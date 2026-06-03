@@ -24,4 +24,10 @@ interface RazorpayInstance {
 
 interface Window {
   Razorpay: new (options: RazorpayOptions) => RazorpayInstance
+  gtag?: (
+    command: 'event' | 'config' | 'js' | 'set',
+    targetOrName: string | Date,
+    params?: Record<string, unknown>
+  ) => void
+  dataLayer?: unknown[]
 }
