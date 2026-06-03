@@ -21,16 +21,24 @@ const ebGaramond = EB_Garamond({
 })
 
 export const metadata: Metadata = {
-  title: 'JyotishAI — Vedic Astrology & Kundali Reading',
+  title: 'JyotishAI — Free Vedic Kundali Reading',
   description:
-    'Discover your cosmic destiny with JyotishAI — AI-powered Vedic astrology readings, Kundali charts, daily Rashifal, and personalized gemstone recommendations rooted in ancient Jyotish wisdom.',
+    'Get your free AI-powered Vedic Kundali reading instantly. Discover your Rashi, Lagna, career predictions, love life and more.',
   keywords:
     'Vedic astrology, Kundali reading, Rashifal, Jyotish, birth chart, horoscope, gemstone, AI astrology',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    apple: '/favicon.png',
+  },
   openGraph: {
-    title: 'JyotishAI — Vedic Astrology & Kundali Reading',
+    title: 'JyotishAI — Free Vedic Kundali Reading',
     description:
-      'Ancient wisdom meets modern intelligence. Get your free Kundali reading powered by AI.',
+      'Get your free AI-powered Vedic Kundali reading instantly. Discover your Rashi, Lagna, career predictions, love life and more.',
     type: 'website',
+    images: ['/favicon.png'],
   },
 }
 
