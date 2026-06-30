@@ -119,7 +119,8 @@ export default function ReadingPage() {
   const [pobCountryInput, setPobCountryInput] = useState('')   // text when "other"
   const [countryError, setCountryError] = useState('')
   const [question, setQuestion] = useState('')          // optional free-text question
-  const [consentGiven, setConsentGiven] = useState(false) // DPDP opt-in (default off)
+  const [consentGiven, setConsentGiven] = useState(false) // DPDP storage opt-in (optional)
+  const [acknowledged, setAcknowledged] = useState(false) // Privacy Policy acceptance (required to submit)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -494,7 +495,57 @@ export default function ReadingPage() {
                 />
               </div>
 
-              {/* DPDP consent — unchecked by default. The reading works either way. */}
+              {/* Required: accept the Privacy Policy. Gates the submit button. */}
+              <div>
+                <label
+                  htmlFor="ack"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    fontFamily: 'EB Garamond, serif',
+                    fontSize: '0.9rem',
+                    color: 'rgba(245,239,214,0.85)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <input
+                    id="ack"
+                    type="checkbox"
+                    checked={acknowledged}
+                    onChange={(e) => setAcknowledged(e.target.checked)}
+                    disabled={isLoading}
+                    style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: '#C9A84C', flexShrink: 0 }}
+                  />
+                  <span>
+                    I have read and accept the{' '}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#C9A84C', textDecoration: 'underline' }}
+                    >
+                      Privacy Policy
+                    </a>
+                    . <span style={{ color: 'rgba(201,168,76,0.7)' }}>(required)</span>
+                  </span>
+                </label>
+                {!acknowledged && !isLoading && (
+                  <p
+                    style={{
+                      fontFamily: 'EB Garamond, serif',
+                      fontSize: '0.82rem',
+                      color: '#E2C07A',
+                      margin: '6px 0 0 26px',
+                    }}
+                  >
+                    Please accept the Privacy Policy to continue.
+                  </p>
+                )}
+              </div>
+
+              {/* DPDP storage opt-in — OPTIONAL and separate. The reading works either way. */}
               <label
                 htmlFor="consent"
                 style={{
@@ -550,10 +601,14 @@ export default function ReadingPage() {
               {/* Submit */}
               <motion.button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !acknowledged}
                 className="glow-btn w-full py-4 rounded-xl text-lg relative overflow-hidden"
-                whileHover={isLoading ? {} : { scale: 1.02 }}
-                whileTap={isLoading ? {} : { scale: 0.98 }}
+                style={{
+                  opacity: !acknowledged && !isLoading ? 0.5 : 1,
+                  cursor: isLoading || !acknowledged ? 'not-allowed' : 'pointer',
+                }}
+                whileHover={isLoading || !acknowledged ? {} : { scale: 1.02 }}
+                whileTap={isLoading || !acknowledged ? {} : { scale: 0.98 }}
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-3">
