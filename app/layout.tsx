@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Cinzel, EB_Garamond } from 'next/font/google'
 import Script from 'next/script'
+import ConsentBanner from '@/components/ConsentBanner'
 import './globals.css'
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID
 const cinzel = Cinzel({
@@ -17,6 +18,7 @@ const ebGaramond = EB_Garamond({
   display: 'swap',
 })
 export const metadata: Metadata = {
+  metadataBase: new URL('https://jyotishai.xyz'),
   title: 'JyotishAI — Free Vedic Kundali Reading',
   description:
     'Get your free AI-powered Vedic Kundali reading instantly. Discover your Rashi, Lagna, career predictions, love life and more.',
@@ -68,6 +70,7 @@ export default function RootLayout({
         style={{ backgroundColor: '#0A0A0F', color: '#F5EFD6' }}
       >
         {children}
+        <ConsentBanner />
       </body>
     </html>
   )

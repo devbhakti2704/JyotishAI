@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import StarBackground from '@/components/StarBackground'
@@ -128,6 +129,20 @@ const testimonials = [
 ]
 
 export default function HomePage() {
+  // Capture SEO attribution params (?src=&intent=&slug=) once on landing.
+  // Only overwrite when a value is actually present, so later internal
+  // navigations to "/" don't wipe the original attribution.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const persist = (param: string, key: string) => {
+      const value = params.get(param)
+      if (value) sessionStorage.setItem(key, value)
+    }
+    persist('src', 'jyotish_src')
+    persist('intent', 'jyotish_intent')
+    persist('slug', 'jyotish_slug')
+  }, [])
+
   return (
     <main className="relative min-h-screen overflow-x-hidden">
       <StarBackground />
@@ -619,6 +634,7 @@ export default function HomePage() {
             { href: '/reading', label: 'Kundali' },
             { href: '/rashifal', label: 'Rashifal' },
             { href: '/reading', label: 'Gemstones' },
+            { href: '/privacy', label: 'Privacy' },
           ].map((link) => (
             <Link
               key={link.label}

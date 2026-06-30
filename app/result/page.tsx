@@ -9,6 +9,7 @@ import MandalaDivider from '@/components/MandalaDivider'
 import KundaliChart from '@/components/KundaliChart'
 import LockedSection from '@/components/LockedSection'
 import ShareCard from '@/components/ShareCard'
+import TalkToAstrologer from '@/components/TalkToAstrologer'
 import { trackEvent } from '@/lib/analytics'
 
 interface DashaPeriod {
@@ -304,6 +305,14 @@ function ResultContent() {
     return first.length > 120 ? first.slice(0, 117).trimEnd() + '…' : first
   })()
 
+  // First few sentences of the full reading — shown as a REAL (un-blurred) preview
+  // that fades into the paywall, so the visitor reads genuine content before paying.
+  const previewText = (() => {
+    const career = reading.fullReading?.career || ''
+    const sentences = career.split(/(?<=[.!?])\s+/).slice(0, 3).join(' ')
+    return sentences || career.slice(0, 320)
+  })()
+
   return (
     <div className="relative z-10 min-h-screen px-4 pt-20 pb-16">
       <div className="max-w-3xl mx-auto">
@@ -545,69 +554,6 @@ function ResultContent() {
             </button>
           </motion.div>
 
-          {/* Email capture — optional */}
-          <motion.div variants={fadeInUp} className="mt-6 mb-2">
-            <div className="glass-card p-5" style={{ border: '1px solid rgba(201,168,76,0.2)' }}>
-              {subscribeState === 'done' ? (
-                <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '15px', color: '#4ade80', textAlign: 'center' }}>
-                  ✓ You&apos;re subscribed! Your daily Rashifal is on its way.
-                </p>
-              ) : (
-                <>
-                  <p style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', color: '#C9A84C', marginBottom: '4px', letterSpacing: '0.04em' }}>
-                    Want your free daily Rashifal?
-                  </p>
-                  <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '14px', color: 'rgba(245,239,214,0.5)', marginBottom: '12px' }}>
-                    Enter your email — completely optional, unsubscribe any time.
-                  </p>
-                  <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      style={{
-                        flex: 1,
-                        minWidth: '180px',
-                        background: 'rgba(10,10,15,0.8)',
-                        border: '1px solid rgba(201,168,76,0.35)',
-                        borderRadius: '8px',
-                        padding: '10px 14px',
-                        color: '#F5EFD6',
-                        fontFamily: 'EB Garamond, serif',
-                        fontSize: '15px',
-                        outline: 'none',
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={subscribeState === 'loading'}
-                      style={{
-                        fontFamily: 'Cinzel, serif',
-                        fontSize: '13px',
-                        background: 'rgba(201,168,76,0.15)',
-                        border: '1px solid rgba(201,168,76,0.4)',
-                        borderRadius: '8px',
-                        padding: '10px 18px',
-                        color: '#C9A84C',
-                        cursor: subscribeState === 'loading' ? 'not-allowed' : 'pointer',
-                        whiteSpace: 'nowrap',
-                        letterSpacing: '0.04em',
-                      }}
-                    >
-                      {subscribeState === 'loading' ? 'Saving…' : 'Subscribe'}
-                    </button>
-                  </form>
-                  {subscribeState === 'error' && (
-                    <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '13px', color: '#f87171', marginTop: '6px' }}>
-                      Something went wrong. Please try again.
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          </motion.div>
-
           <MandalaDivider />
 
           {/* Locked Section */}
@@ -628,7 +574,22 @@ function ResultContent() {
               <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(201,168,76,0.3), transparent)' }} />
             </div>
 
-            <LockedSection isUnlocked={isUnlocked} onUnlock={() => setIsUnlocked(true)}>
+            <LockedSection
+              isUnlocked={isUnlocked}
+              onUnlock={() => setIsUnlocked(true)}
+              preview={
+                <ReadingCard
+                  title="Career & Professional Life"
+                  content={previewText}
+                  icon={
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <rect x="2" y="7" width="20" height="14" rx="2" stroke="#C9A84C" strokeWidth="1.5" />
+                      <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="#C9A84C" strokeWidth="1.5" />
+                    </svg>
+                  }
+                />
+              }
+            >
               <div className="space-y-4">
                 {/* Career */}
                 <ReadingCard
@@ -802,6 +763,76 @@ function ResultContent() {
                 </div>
               </div>
             </LockedSection>
+          </motion.div>
+
+          {/* Talk to a real astrologer — alternative paid path (₹499) */}
+          <motion.div variants={fadeInUp} className="mt-8">
+            <TalkToAstrologer />
+          </motion.div>
+
+          <MandalaDivider />
+
+          {/* Email capture — optional */}
+          <motion.div variants={fadeInUp} className="mt-6 mb-2">
+            <div className="glass-card p-5" style={{ border: '1px solid rgba(201,168,76,0.2)' }}>
+              {subscribeState === 'done' ? (
+                <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '15px', color: '#4ade80', textAlign: 'center' }}>
+                  ✓ You&apos;re subscribed! Your daily Rashifal is on its way.
+                </p>
+              ) : (
+                <>
+                  <p style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', color: '#C9A84C', marginBottom: '4px', letterSpacing: '0.04em' }}>
+                    Want your free daily Rashifal?
+                  </p>
+                  <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '14px', color: 'rgba(245,239,214,0.5)', marginBottom: '12px' }}>
+                    Enter your email — completely optional, unsubscribe any time.
+                  </p>
+                  <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      style={{
+                        flex: 1,
+                        minWidth: '180px',
+                        background: 'rgba(10,10,15,0.8)',
+                        border: '1px solid rgba(201,168,76,0.35)',
+                        borderRadius: '8px',
+                        padding: '10px 14px',
+                        color: '#F5EFD6',
+                        fontFamily: 'EB Garamond, serif',
+                        fontSize: '15px',
+                        outline: 'none',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={subscribeState === 'loading'}
+                      style={{
+                        fontFamily: 'Cinzel, serif',
+                        fontSize: '13px',
+                        background: 'rgba(201,168,76,0.15)',
+                        border: '1px solid rgba(201,168,76,0.4)',
+                        borderRadius: '8px',
+                        padding: '10px 18px',
+                        color: '#C9A84C',
+                        cursor: subscribeState === 'loading' ? 'not-allowed' : 'pointer',
+                        whiteSpace: 'nowrap',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {subscribeState === 'loading' ? 'Saving…' : 'Subscribe'}
+                    </button>
+                  </form>
+                  {subscribeState === 'error' && (
+                    <p style={{ fontFamily: 'EB Garamond, serif', fontSize: '13px', color: '#f87171', marginTop: '6px' }}>
+                      Something went wrong. Please try again.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </motion.div>
 
           {/* Footer actions */}

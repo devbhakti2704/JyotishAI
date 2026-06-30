@@ -1,6 +1,11 @@
 import Groq from 'groq-sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Allow the Groq generation to run beyond the platform's default (short) timeout.
+// On a cold serverless function the first request is slowest; without this the
+// first attempt can exceed the default limit and fail, while a warm retry succeeds.
+export const maxDuration = 60
+
 function calculateRashi(dob: string): string {
   // Parse date and return Vedic rashi name based on approximate Sun sign
   // Vedic rashis (tropical sun sign as fallback approximation)
@@ -43,11 +48,13 @@ function calculateRashi(dob: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, dob, tob, pob } = body as {
+    const { name, dob, tob, pob, question, consent } = body as {
       name: string
       dob: string
       tob?: string
       pob: string
+      question?: string
+      consent?: boolean
     }
 
     if (!name || !dob || !pob) {
@@ -69,7 +76,13 @@ export async function POST(request: NextRequest) {
     const rashi = calculateRashi(dob)
     const birthTime = tob ? `at ${tob}` : '(time not provided)'
 
-    const prompt = `Give a complete Vedic astrology reading for ${name}, born on ${dob} ${birthTime} in ${pob}. Their approximate Rashi (Sun sign) is ${rashi}.
+    // Pass the user's raw question through to frame the reading. Classification
+    // happens separately in /api/submissions — we do NOT re-classify here.
+    const questionContext = question?.trim()
+      ? `\n\nThe user has a specific question: "${question.trim()}". Ground your Vedic reading in this context while still covering the relevant chart areas.`
+      : ''
+
+    const prompt = `Give a complete Vedic astrology reading for ${name}, born on ${dob} ${birthTime} in ${pob}. Their approximate Rashi (Sun sign) is ${rashi}.${questionContext}
 
 Return ONLY valid JSON in this exact structure (no extra text, no markdown):
 {
@@ -109,12 +122,26 @@ Return ONLY valid JSON in this exact structure (no extra text, no markdown):
 
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
+      // JSON mode guarantees syntactically valid JSON, removing the intermittent
+      // parse failures that surfaced as a generic 500 on some generations.
+      response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
       ],
       max_tokens: 2000,
     })
+
+    // Consent-gated export to a Google Sheet webhook. Fire-and-forget (never awaited),
+    // so it can't slow down or break the reading response. Skips silently if the user
+    // didn't opt in or the webhook env var isn't set.
+    if (consent === true && process.env.GOOGLE_SHEET_WEBHOOK) {
+      fetch(process.env.GOOGLE_SHEET_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, dob, tob: tob ?? '', pob, question: question ?? '' }),
+      }).catch(() => {})
+    }
 
     const rawText = (completion.choices[0].message.content ?? '').trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
 

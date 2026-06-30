@@ -1,7 +1,14 @@
 import Razorpay from 'razorpay'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST() {
+// Server-side price catalog. Amounts are NEVER taken from the client — the client
+// only sends a product key, so the price can't be tampered with.
+const PRODUCTS: Record<string, { amount: number; receipt: string }> = {
+  reading: { amount: 4900, receipt: 'jyotish_reading' },        // ₹49 full reading
+  astrologer: { amount: 49900, receipt: 'jyotish_astrologer' }, // ₹499 live astrologer
+}
+
+export async function POST(request: NextRequest) {
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
     return NextResponse.json(
       { error: 'Razorpay keys not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to .env.local.' },
@@ -10,15 +17,28 @@ export async function POST() {
   }
 
   try {
+    // Missing product → default to 'reading' (back-compat for callers that send no body).
+    // Present-but-invalid product → fail loudly, never silently mischarge.
+    const body = await request.json().catch(() => ({}))
+    const requested = body?.product
+    if (requested != null && !PRODUCTS[requested as string]) {
+      return NextResponse.json(
+        { error: `Unknown product: ${String(requested)}. Valid products: ${Object.keys(PRODUCTS).join(', ')}.` },
+        { status: 400 }
+      )
+    }
+    const product = (requested as string) ?? 'reading'
+    const { amount, receipt } = PRODUCTS[product]
+
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
     })
 
     const order = await razorpay.orders.create({
-      amount: 4900, // ₹49 in paise
+      amount,
       currency: 'INR',
-      receipt: 'jyotish_receipt',
+      receipt,
     })
 
     return NextResponse.json({

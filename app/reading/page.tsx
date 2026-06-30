@@ -118,6 +118,8 @@ export default function ReadingPage() {
   const [pobSelection, setPobSelection] = useState('')         // dropdown value
   const [pobCountryInput, setPobCountryInput] = useState('')   // text when "other"
   const [countryError, setCountryError] = useState('')
+  const [question, setQuestion] = useState('')          // optional free-text question
+  const [consentGiven, setConsentGiven] = useState(false) // DPDP opt-in (default off)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -175,7 +177,7 @@ export default function ReadingPage() {
       const response = await fetch('/api/reading', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, pob: finalPob }),
+        body: JSON.stringify({ ...formData, pob: finalPob, question, consent: consentGiven }),
       })
 
       if (!response.ok) {
@@ -192,6 +194,29 @@ export default function ReadingPage() {
         generatedAt: new Date().toISOString(),
       }
       localStorage.setItem(`jyotish_reading_${id}`, JSON.stringify(payload))
+
+      // Consent-gated persistence. Only runs if the user opted in. Fire-and-forget:
+      // it must never block or break the reading flow. Unchecked = nothing is stored.
+      if (consentGiven) {
+        fetch('/api/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            dob: formData.dob,
+            tob: formData.tob,
+            pob: finalPob,
+            question,
+            consent: true,
+          }),
+        })
+          .then((r) => r.json())
+          .then((d) => {
+            // Persist the deletion code so the user can later request erasure.
+            if (d?.id) localStorage.setItem('jyotish_deletion_code', d.id)
+          })
+          .catch(() => {})
+      }
 
       router.push(`/result?id=${id}`)
     } catch (err) {
@@ -449,6 +474,61 @@ export default function ReadingPage() {
                   </motion.div>
                 )}
               </div>
+
+              {/* Optional question */}
+              <div>
+                <label htmlFor="question" style={labelStyle}>
+                  Your Question{' '}
+                  <span style={{ color: 'rgba(201,168,76,0.5)', fontSize: '0.75rem' }}>
+                    (optional)
+                  </span>
+                </label>
+                <textarea
+                  id="question"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="Is there something specific you'd like the stars to address? e.g. career, love, health…"
+                  disabled={isLoading}
+                  rows={3}
+                  style={{ ...inputStyle, resize: 'vertical', minHeight: '72px' }}
+                />
+              </div>
+
+              {/* DPDP consent — unchecked by default. The reading works either way. */}
+              <label
+                htmlFor="consent"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  fontFamily: 'EB Garamond, serif',
+                  fontSize: '0.9rem',
+                  color: 'rgba(245,239,214,0.75)',
+                  lineHeight: 1.5,
+                }}
+              >
+                <input
+                  id="consent"
+                  type="checkbox"
+                  checked={consentGiven}
+                  onChange={(e) => setConsentGiven(e.target.checked)}
+                  disabled={isLoading}
+                  style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: '#C9A84C', flexShrink: 0 }}
+                />
+                <span>
+                  I agree to JyotishAI storing my data per the{' '}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#C9A84C', textDecoration: 'underline' }}
+                  >
+                    Privacy Policy
+                  </a>
+                  . Leaving this unchecked still gives you your full reading — we just won't save anything.
+                </span>
+              </label>
 
               {/* General error */}
               {error && (
